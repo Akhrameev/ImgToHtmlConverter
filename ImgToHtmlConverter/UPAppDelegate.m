@@ -61,7 +61,7 @@
 
 - (void)convertToHtmlImageWithName:(NSString *)imgName toFileName:(NSString *)fileName {
     UIImage *img = [UIImage imageNamed:imgName];
-    NSString *resultHtml = @"<HTML><head><style type=\"text/css\"> tr{height:1px} </style></head><BODY><table border=\"0\" cellspacing=\"0\" cellpadding=\"0\">";
+    NSString *resultHtml = @"<html><head><style type=\"text/css\">tr{height:1}</style></head><body><table border=0 cellspacing=0 cellpadding=0>";
     CGSize size = img.size;
     NSArray *array = [self.class getRGBAsFromImage:img atX:0 andY:0 count:size.height * size.width];
     
@@ -80,9 +80,9 @@
             if ((lastColor && ![lastColor isEqual:color])) {
                 NSString *hex = [NSString stringWithFormat:@"#%@", [self.class colorToWeb:lastColor]];
                 if (!pixelsOfSameColor) {
-                    rowString = [rowString stringByAppendingString:[NSString stringWithFormat:@"<td width='1' bgcolor=%@></td>", hex]];
+                    rowString = [rowString stringByAppendingString:[NSString stringWithFormat:@"<td width=1 bgcolor=%@></td>", hex]];
                 } else {
-                    rowString = [rowString stringByAppendingString:[NSString stringWithFormat:@"<td colspan='%@' width='%@' bgcolor=%@></td>", @(pixelsOfSameColor + 1), @(pixelsOfSameColor + 1), hex]];
+                    rowString = [rowString stringByAppendingString:[NSString stringWithFormat:@"<td colspan=%@ width=%@ bgcolor=%@></td>", @(pixelsOfSameColor + 1), @(pixelsOfSameColor + 1), hex]];
                 }
                 pixelsOfSameColor = 0;
             } else {
@@ -93,9 +93,9 @@
         if (pixelsOfSameColor) {
             NSString *hex = [NSString stringWithFormat:@"#%@", [self.class colorToWeb:lastColor]];
             if (!pixelsOfSameColor) {
-                rowString = [rowString stringByAppendingString:[NSString stringWithFormat:@"<td width='1' bgcolor=%@></td>", hex]];
+                rowString = [rowString stringByAppendingString:[NSString stringWithFormat:@"<td width=1 bgcolor=%@></td>", hex]];
             } else {
-                rowString = [rowString stringByAppendingString:[NSString stringWithFormat:@"<td colspan='%@' width='%@' bgcolor=%@></td>", @(pixelsOfSameColor + 1), @(pixelsOfSameColor + 1), hex]];
+                rowString = [rowString stringByAppendingString:[NSString stringWithFormat:@"<td colspan=%@ width=%@ bgcolor=%@></td>", @(pixelsOfSameColor + 1), @(pixelsOfSameColor + 1), hex]];
             }
         }
         rowString = [rowString stringByAppendingString:@"</tr>"];
@@ -103,7 +103,7 @@
         [myHandle writeData:[rowString dataUsingEncoding:NSUTF8StringEncoding]];
     }
     [myHandle seekToEndOfFile];
-    [myHandle writeData:[@"</table></BODY></HTML>" dataUsingEncoding:NSUTF8StringEncoding]];
+    [myHandle writeData:[@"</table></body></html>" dataUsingEncoding:NSUTF8StringEncoding]];
 }
 
 + (NSArray*)getRGBAsFromImage:(UIImage*)image atX:(int)xx andY:(int)yy count:(int)count

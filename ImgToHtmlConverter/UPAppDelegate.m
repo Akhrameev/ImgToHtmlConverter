@@ -55,13 +55,13 @@
         BOOL html = YES;
         NSString *format = html ? @"html" : @"txt";
         NSString *fileName = [NSString stringWithFormat:@"%@.%@", name, format];
-        [self convertToHtmlImageWithName:name toFileName:fileName];
+        [self convertToHtmlImageWithName:name toFileName:fileName combineSameLines:YES||([name rangeOfString:@"cover"].location != NSNotFound)];
     }
 }
 
-- (void)convertToHtmlImageWithName:(NSString *)imgName toFileName:(NSString *)fileName {
+- (void)convertToHtmlImageWithName:(NSString *)imgName toFileName:(NSString *)fileName combineSameLines:(BOOL)combineSameLines {
     UIImage *img = [UIImage imageNamed:imgName];
-    NSString *resultHtml = @"<html><head><style type=\"text/css\">tr{height:1}</style></head><body><table border=0 cellspacing=0 cellpadding=0>";
+    NSString *resultHtml = [NSString stringWithFormat:@"<html><head><style type=\"text/css\">tr%@{height:1}</style></head><body><table border=0 cellspacing=0 cellpadding=0>", (combineSameLines ? @":not(.m)" : @"")];
     CGSize size = img.size;
     NSArray *array = [self.class getRGBAsFromImage:img atX:0 andY:0 count:size.height * size.width];
     
@@ -71,6 +71,8 @@
     [resultHtml writeToFile:documentTXTPath atomically:YES];
     NSFileHandle *myHandle = [NSFileHandle fileHandleForWritingAtPath:documentTXTPath];
     
+    NSString *lastRowString = nil;
+    NSUInteger sameStringsCount = 0;
     for (NSUInteger row = 0; row < size.height; ++row) {
         UIColor *lastColor = nil;
         NSString *rowString = @"<tr>";
@@ -92,15 +94,33 @@
         }
         if (pixelsOfSameColor) {
             NSString *hex = [NSString stringWithFormat:@"#%@", [self.class colorToWeb:lastColor]];
-            if (!pixelsOfSameColor) {
-                rowString = [rowString stringByAppendingString:[NSString stringWithFormat:@"<td width=1 bgcolor=%@></td>", hex]];
-            } else {
-                rowString = [rowString stringByAppendingString:[NSString stringWithFormat:@"<td colspan=%@ width=%@ bgcolor=%@></td>", @(pixelsOfSameColor + 1), @(pixelsOfSameColor + 1), hex]];
-            }
+            rowString = [rowString stringByAppendingString:[NSString stringWithFormat:@"<td colspan=%@ width=%@ bgcolor=%@></td>", @(pixelsOfSameColor + 1), @(pixelsOfSameColor + 1), hex]];
         }
         rowString = [rowString stringByAppendingString:@"</tr>"];
+        if (combineSameLines) {
+            if (lastRowString && ![lastRowString isEqualToString:rowString]) {
+                if (!sameStringsCount) {
+                    [myHandle seekToEndOfFile];
+                    [myHandle writeData:[lastRowString dataUsingEncoding:NSUTF8StringEncoding]];
+                } else {
+                    lastRowString = [lastRowString stringByReplacingOccurrencesOfString:@"<tr>" withString:[NSString stringWithFormat:@"<tr class=\"m\" height=%@>", @(sameStringsCount + 1)]];
+                    [myHandle seekToEndOfFile];
+                    [myHandle writeData:[lastRowString dataUsingEncoding:NSUTF8StringEncoding]];
+                }
+                sameStringsCount = 0;
+            } else {
+                ++sameStringsCount;
+            }
+        } else {
+            [myHandle seekToEndOfFile];
+            [myHandle writeData:[rowString dataUsingEncoding:NSUTF8StringEncoding]];
+        }
+        lastRowString = rowString;
+    }
+    if (sameStringsCount && combineSameLines) {
+        lastRowString = [lastRowString stringByReplacingOccurrencesOfString:@"<tr>" withString:[NSString stringWithFormat:@"<tr class=\"m\" height=%@>", @(sameStringsCount + 1)]];
         [myHandle seekToEndOfFile];
-        [myHandle writeData:[rowString dataUsingEncoding:NSUTF8StringEncoding]];
+        [myHandle writeData:[lastRowString dataUsingEncoding:NSUTF8StringEncoding]];
     }
     [myHandle seekToEndOfFile];
     [myHandle writeData:[@"</table></body></html>" dataUsingEncoding:NSUTF8StringEncoding]];
